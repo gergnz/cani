@@ -46,7 +46,7 @@ class CaniPipelineStack(Stack):
                 input=pipelines.CodePipelineSource.code_commit(
                     repository=repository, branch="main"
                 ),
-                install_commands=["n 14.19.0"],
+                install_commands=["n 18.15.0"],
                 commands=[
                     "pip install -r requirements.txt",
                     "npm install -g aws-cdk",
