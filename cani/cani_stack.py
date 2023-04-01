@@ -108,7 +108,7 @@ class CaniStack(Stack):
                     ec2.InstanceClass.BURSTABLE4_GRAVITON, ec2.InstanceSize.SMALL
                 ),
                 vpc_subnets=ec2.SubnetSelection(
-                    subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS,
+                    subnet_type=ec2.SubnetType.PRIVATE_ISOLATED
                 ),
                 vpc=cani_vpc,
             ),
