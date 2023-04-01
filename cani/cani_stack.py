@@ -105,7 +105,7 @@ class CaniStack(Stack):
             network_type=rds.NetworkType.DUAL,
             instance_props=rds.InstanceProps(
                 instance_type=ec2.InstanceType.of(
-                    ec2.InstanceClass.BURSTABLE4_GRAVITON, ec2.InstanceSize.SMALL
+                    ec2.InstanceClass.BURSTABLE4_GRAVITON, ec2.InstanceSize.MEDIUM
                 ),
                 vpc_subnets=ec2.SubnetSelection(
                     subnet_type=ec2.SubnetType.PRIVATE_ISOLATED
