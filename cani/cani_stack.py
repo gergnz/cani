@@ -143,6 +143,7 @@ class CaniStack(Stack):
                 cluster=cluster,
                 memory_limit_mib=1024,
                 desired_count=1,
+                assign_public_ip=True,
                 cpu=512,
                 runtime_platform=ecs.RuntimePlatform(
                     cpu_architecture=ecs.CpuArchitecture.ARM64,
