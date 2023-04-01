@@ -3,6 +3,7 @@ from aws_cdk import (
     Stack,
     aws_ec2 as ec2,
     aws_rds as rds,
+    aws_lambda as lambda_,
     aws_elasticache as elasticache,
     Fn,
 )
@@ -112,4 +113,11 @@ class CaniStack(Stack):
                 ),
                 vpc=cani_vpc,
             ),
+        )
+
+        lambda_.Function(self, "lambda_function",
+            runtime=lambda_.Runtime.PYTHON_3_9,
+            handler="lambda-handler.handler",
+            code=lambda_.Code.from_asset("lambda"),
+            architecture=lambda_.Architecture.ARM_64
         )
