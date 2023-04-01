@@ -6,9 +6,11 @@ from aws_cdk import (
     aws_rds as rds,
     aws_ecs as ecs,
     aws_lambda as lambda_,
+    aws_cloudfront as cloudfront,
     aws_elasticache as elasticache,
     aws_ecs_patterns as ecs_patterns,
     aws_elasticloadbalancingv2 as alb,
+    aws_cloudfront_origins as origins,
     Fn,
 )
 from constructs import Construct
@@ -165,3 +167,7 @@ class CaniStack(Stack):
                 for subnode in node.node.children:
                     if isinstance(subnode, alb.CfnLoadBalancer):
                         subnode.add_override("Properties.IpAddressType", "dualstack")
+
+        cloudfront.Distribution(self, "distribution",
+            default_behavior=cloudfront.BehaviorOptions(origin=origins.LoadBalancerV2Origin(lb_fs))
+        )
