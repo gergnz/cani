@@ -1,6 +1,6 @@
 FROM public.ecr.aws/docker/library/python:latest
 
-COPY requirements.txt app.py /srv
+COPY requirements.txt app.py /srv/
 
 WORKDIR /srv
 
