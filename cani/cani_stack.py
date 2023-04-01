@@ -8,6 +8,7 @@ from aws_cdk import (
     aws_lambda as lambda_,
     aws_elasticache as elasticache,
     aws_ecs_patterns as ecs_patterns,
+    aws_elasticloadbalancingv2 as alb,
     Fn,
 )
 from constructs import Construct
@@ -136,7 +137,7 @@ class CaniStack(Stack):
 
         cluster = ecs.Cluster(self, "fargate_cluster", vpc=cani_vpc)
 
-        load_balanced_fargate_service = (
+        lb_fs = load_balanced_fargate_service = (
             ecs_patterns.ApplicationLoadBalancedFargateService(
                 self,
                 "Service",
@@ -151,9 +152,16 @@ class CaniStack(Stack):
                 ),
                 task_image_options=ecs_patterns.ApplicationLoadBalancedTaskImageOptions(
                     image=ecs.ContainerImage.from_docker_image_asset(asset),
+                    container_port=8000
                 ),
                 task_subnets=ec2.SubnetSelection(
                     subnets=cani_vpc.public_subnets
                 ),
             )
         )
+
+        for node in lb_fs.node.children:
+            if isinstance(node, alb.ApplicationLoadBalancer):
+                for subnode in node.node.children:
+                    if isinstance(subnode, alb.CfnLoadBalancer):
+                        subnode.add_override("Properties.IpAddressType", "dualstack")
