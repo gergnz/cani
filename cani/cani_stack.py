@@ -2,6 +2,7 @@
 from aws_cdk import (
     Stack,
     aws_ec2 as ec2,
+    aws_rds as rds,
     aws_elasticache as elasticache,
     Fn,
 )
@@ -92,4 +93,23 @@ class CaniStack(Stack):
             network_type="dual_stack",
             cache_subnet_group_name=redis_subnet_group.ref,
             vpc_security_group_ids=[redis_sec_group.security_group_id],
+        )
+
+        aurora_cluster = rds.DatabaseCluster(
+            self,
+            "aurora_cluster",
+            engine=rds.DatabaseClusterEngine.aurora_mysql(
+                version=rds.AuroraMysqlEngineVersion.VER_3_03_0
+            ),
+            instances=1,
+            network_type=rds.NetworkType.DUAL,
+            instance_props=rds.InstanceProps(
+                instance_type=ec2.InstanceType.of(
+                    ec2.InstanceClass.BURSTABLE4_GRAVITON, ec2.InstanceSize.SMALL
+                ),
+                vpc_subnets=ec2.SubnetSelection(
+                    subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS,
+                ),
+                vpc=cani_vpc,
+            ),
         )
