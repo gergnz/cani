@@ -1,6 +1,7 @@
 """Can I module"""
 from aws_cdk import (
     Stack,
+    aws_s3 as s3,
     aws_ec2 as ec2,
     aws_rds as rds,
     aws_lambda as lambda_,
