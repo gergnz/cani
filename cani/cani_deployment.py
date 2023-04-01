@@ -29,7 +29,7 @@ class CaniPipelineStack(Stack):
                 privileged=True,
             ),
             partial_build_spec=codebuild.BuildSpec.from_object(
-                {"phases": {"install": {"commands": ["n 14.19.0"]}}}
+                {"phases": {"install": {"commands": ["n 16.20.0"]}}}
             ),
         )
 
@@ -46,7 +46,7 @@ class CaniPipelineStack(Stack):
                 input=pipelines.CodePipelineSource.code_commit(
                     repository=repository, branch="main"
                 ),
-                install_commands=["n 16.3.0"],
+                install_commands=["n 16.20.0"],
                 commands=[
                     "pip install -r requirements.txt",
                     "npm install -g aws-cdk",
