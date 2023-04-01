@@ -121,3 +121,5 @@ class CaniStack(Stack):
             code=lambda_.Code.from_asset("lambda"),
             architecture=lambda_.Architecture.ARM_64
         )
+
+        bucket = s3.Bucket(self, "bucket")
