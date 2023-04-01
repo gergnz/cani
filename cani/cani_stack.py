@@ -134,25 +134,25 @@ class CaniStack(Stack):
             directory="docker"
         )
 
-        #cluster = ecs.Cluster(self, "fargate_cluster", vpc=cani_vpc)
+        cluster = ecs.Cluster(self, "fargate_cluster", vpc=cani_vpc)
 
-        #load_balanced_fargate_service = (
-        #    ecs_patterns.ApplicationLoadBalancedFargateService(
-        #        self,
-        #        "Service",
-        #        cluster=cluster,
-        #        memory_limit_mib=1024,
-        #        desired_count=1,
-        #        cpu=512,
-        #        runtime_platform=ecs.RuntimePlatform(
-        #            cpu_architecture=ecs.CpuArchitecture.ARM64,
-        #            operating_system_family=ecs.OperatingSystemFamily.LINUX,
-        #        ),
-        #        task_image_options=ecs_patterns.ApplicationLoadBalancedTaskImageOptions(
-        #            image=ecs.ContainerImage.from_docker_image_asset(asset),
-        #        ),
-        #        task_subnets=ec2.SubnetSelection(
-        #            subnets=cani_vpc.public_subnets
-        #        ),
-        #    )
-        #)
+        load_balanced_fargate_service = (
+            ecs_patterns.ApplicationLoadBalancedFargateService(
+                self,
+                "Service",
+                cluster=cluster,
+                memory_limit_mib=1024,
+                desired_count=1,
+                cpu=512,
+                runtime_platform=ecs.RuntimePlatform(
+                    cpu_architecture=ecs.CpuArchitecture.ARM64,
+                    operating_system_family=ecs.OperatingSystemFamily.LINUX,
+                ),
+                task_image_options=ecs_patterns.ApplicationLoadBalancedTaskImageOptions(
+                    image=ecs.ContainerImage.from_docker_image_asset(asset),
+                ),
+                task_subnets=ec2.SubnetSelection(
+                    subnets=cani_vpc.public_subnets
+                ),
+            )
+        )
