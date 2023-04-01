@@ -5,7 +5,7 @@ from aws_cdk import (
     Stage,
     pipelines,
     aws_codebuild as codebuild,
-    aws_codecommit as codecommit
+    aws_codecommit as codecommit,
 )
 from constructs import Construct
 
@@ -33,7 +33,9 @@ class CaniPipelineStack(Stack):
             ),
         )
 
-        repository = codecommit.Repository.from_repository_name(self, "cani_repo", repository_name="cani")
+        repository = codecommit.Repository.from_repository_name(
+            self, "cani_repo", repository_name="cani"
+        )
 
         pipeline = pipelines.CodePipeline(
             self,
@@ -42,8 +44,7 @@ class CaniPipelineStack(Stack):
             synth=pipelines.ShellStep(
                 "Synth",
                 input=pipelines.CodePipelineSource.code_commit(
-                    repository = repository,
-                    branch = 'main'
+                    repository=repository, branch="main"
                 ),
                 install_commands=["n 14.19.0"],
                 commands=[
