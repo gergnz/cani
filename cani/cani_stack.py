@@ -11,6 +11,7 @@ from aws_cdk import (
     Fn,
 )
 from constructs import Construct
+from aws_cdk.aws_ecr_assets import DockerImageAsset
 
 
 class CaniStack(Stack):
@@ -127,6 +128,12 @@ class CaniStack(Stack):
 
         # bucket = s3.Bucket(self, "bucket")
 
+        asset = DockerImageAsset(
+            self,
+            "image",
+            directory="docker"
+        )
+
         #cluster = ecs.Cluster(self, "fargate_cluster", vpc=cani_vpc)
 
         #load_balanced_fargate_service = (
@@ -142,11 +149,10 @@ class CaniStack(Stack):
         #            operating_system_family=ecs.OperatingSystemFamily.LINUX,
         #        ),
         #        task_image_options=ecs_patterns.ApplicationLoadBalancedTaskImageOptions(
-        #            image=ecs.ContainerImage.from_registry("amazon/amazon-ecs-sample")
+        #            image=ecs.ContainerImage.from_docker_image_asset(asset),
         #        ),
         #        task_subnets=ec2.SubnetSelection(
         #            subnets=cani_vpc.public_subnets
         #        ),
-        #        load_balancer_name="application-lb-name",
         #    )
         #)
