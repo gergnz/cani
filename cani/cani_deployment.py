@@ -48,6 +48,7 @@ class CaniPipelineStack(Stack):
                 ),
                 install_commands=["n 16.20.0"],
                 commands=[
+                    "pip install --upgrade pip",
                     "pip install -r requirements.txt",
                     "npm install -g aws-cdk",
                     "cdk synth",
