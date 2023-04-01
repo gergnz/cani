@@ -127,26 +127,26 @@ class CaniStack(Stack):
 
         # bucket = s3.Bucket(self, "bucket")
 
-        cluster = ecs.Cluster(self, "fargate_cluster", vpc=cani_vpc)
+        #cluster = ecs.Cluster(self, "fargate_cluster", vpc=cani_vpc)
 
-        load_balanced_fargate_service = (
-            ecs_patterns.ApplicationLoadBalancedFargateService(
-                self,
-                "Service",
-                cluster=cluster,
-                memory_limit_mib=1024,
-                desired_count=1,
-                cpu=512,
-                runtime_platform=ecs.RuntimePlatform(
-                    cpu_architecture=ecs.CpuArchitecture.ARM64,
-                    operating_system_family=ecs.OperatingSystemFamily.LINUX,
-                ),
-                task_image_options=ecs_patterns.ApplicationLoadBalancedTaskImageOptions(
-                    image=ecs.ContainerImage.from_registry("amazon/amazon-ecs-sample")
-                ),
-                task_subnets=ec2.SubnetSelection(
-                    subnets=cani_vpc.public_subnets
-                ),
-                load_balancer_name="application-lb-name",
-            )
-        )
+        #load_balanced_fargate_service = (
+        #    ecs_patterns.ApplicationLoadBalancedFargateService(
+        #        self,
+        #        "Service",
+        #        cluster=cluster,
+        #        memory_limit_mib=1024,
+        #        desired_count=1,
+        #        cpu=512,
+        #        runtime_platform=ecs.RuntimePlatform(
+        #            cpu_architecture=ecs.CpuArchitecture.ARM64,
+        #            operating_system_family=ecs.OperatingSystemFamily.LINUX,
+        #        ),
+        #        task_image_options=ecs_patterns.ApplicationLoadBalancedTaskImageOptions(
+        #            image=ecs.ContainerImage.from_registry("amazon/amazon-ecs-sample")
+        #        ),
+        #        task_subnets=ec2.SubnetSelection(
+        #            subnets=cani_vpc.public_subnets
+        #        ),
+        #        load_balancer_name="application-lb-name",
+        #    )
+        #)
