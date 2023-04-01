@@ -1,10 +1,9 @@
 """Can I module"""
 from aws_cdk import (
-    # Duration,
     Stack,
     aws_ec2 as ec2,
+    aws_elasticache as elasticache,
     Fn,
-    # aws_sqs as sqs,
 )
 from constructs import Construct
 
@@ -65,3 +64,32 @@ class CaniStack(Stack):
                     destination_ipv6_cidr_block="::/0",
                     enables_internet_connectivity=True,
                 )
+
+        private_subnets = []
+        for subnet in cani_vpc.public_subnets:
+            private_subnets.append(subnet.subnet_id)
+
+        redis_subnet_group = elasticache.CfnSubnetGroup(
+            scope=self,
+            id="redis_subnet_group",
+            subnet_ids=private_subnets,
+            description="subnet group for redis",
+        )
+
+        redis_sec_group = ec2.SecurityGroup(
+            self,
+            "redis_sec_group",
+            vpc=cani_vpc,
+            allow_all_outbound=False,
+        )
+
+        redis_cluster = elasticache.CfnCacheCluster(
+            scope=self,
+            id="redis_cluster",
+            engine="redis",
+            cache_node_type="cache.t4g.small",
+            num_cache_nodes=1,
+            network_type="dual_stack",
+            cache_subnet_group_name=redis_subnet_group.ref,
+            vpc_security_group_ids=[redis_sec_group.security_group_id],
+        )
