@@ -4,8 +4,10 @@ from aws_cdk import (
     aws_s3 as s3,
     aws_ec2 as ec2,
     aws_rds as rds,
+    aws_ecs as ecs,
     aws_lambda as lambda_,
     aws_elasticache as elasticache,
+    aws_ecs_patterns as ecs_patterns,
     Fn,
 )
 from constructs import Construct
@@ -68,59 +70,83 @@ class CaniStack(Stack):
                     enables_internet_connectivity=True,
                 )
 
-        private_subnets = []
+        public_subnets = []
         for subnet in cani_vpc.public_subnets:
-            private_subnets.append(subnet.subnet_id)
+            public_subnets.append(subnet.subnet_id)
 
-        redis_subnet_group = elasticache.CfnSubnetGroup(
-            scope=self,
-            id="redis_subnet_group",
-            subnet_ids=private_subnets,
-            description="subnet group for redis",
-        )
+        # redis_subnet_group = elasticache.CfnSubnetGroup(
+        #    scope=self,
+        #    id="redis_subnet_group",
+        #    subnet_ids=public_subnets,
+        #    description="subnet group for redis",
+        # )
 
-        redis_sec_group = ec2.SecurityGroup(
-            self,
-            "redis_sec_group",
-            vpc=cani_vpc,
-            allow_all_outbound=False,
-        )
+        # redis_sec_group = ec2.SecurityGroup(
+        #    self,
+        #    "redis_sec_group",
+        #    vpc=cani_vpc,
+        #    allow_all_outbound=False,
+        # )
 
-        redis_cluster = elasticache.CfnCacheCluster(
-            scope=self,
-            id="redis_cluster",
-            engine="redis",
-            cache_node_type="cache.t4g.small",
-            num_cache_nodes=1,
-            network_type="dual_stack",
-            cache_subnet_group_name=redis_subnet_group.ref,
-            vpc_security_group_ids=[redis_sec_group.security_group_id],
-        )
+        # redis_cluster = elasticache.CfnCacheCluster(
+        #    scope=self,
+        #    id="redis_cluster",
+        #    engine="redis",
+        #    cache_node_type="cache.t4g.small",
+        #    num_cache_nodes=1,
+        #    network_type="dual_stack",
+        #    cache_subnet_group_name=redis_subnet_group.ref,
+        #    vpc_security_group_ids=[redis_sec_group.security_group_id],
+        # )
 
-        aurora_cluster = rds.DatabaseCluster(
-            self,
-            "aurora_cluster",
-            engine=rds.DatabaseClusterEngine.aurora_mysql(
-                version=rds.AuroraMysqlEngineVersion.VER_3_03_0
-            ),
-            instances=1,
-            network_type=rds.NetworkType.DUAL,
-            instance_props=rds.InstanceProps(
-                instance_type=ec2.InstanceType.of(
-                    ec2.InstanceClass.BURSTABLE4_GRAVITON, ec2.InstanceSize.MEDIUM
+        # aurora_cluster = rds.DatabaseCluster(
+        #    self,
+        #    "aurora_cluster",
+        #    engine=rds.DatabaseClusterEngine.aurora_mysql(
+        #        version=rds.AuroraMysqlEngineVersion.VER_3_03_0
+        #    ),
+        #    instances=1,
+        #    network_type=rds.NetworkType.DUAL,
+        #    instance_props=rds.InstanceProps(
+        #        instance_type=ec2.InstanceType.of(
+        #            ec2.InstanceClass.BURSTABLE4_GRAVITON, ec2.InstanceSize.MEDIUM
+        #        ),
+        #        vpc_subnets=ec2.SubnetSelection(
+        #            subnet_type=ec2.SubnetType.PRIVATE_ISOLATED
+        #        ),
+        #        vpc=cani_vpc,
+        #    ),
+        # )
+
+        # lambda_.Function(self, "lambda_function",
+        #    runtime=lambda_.Runtime.PYTHON_3_9,
+        #    handler="lambda-handler.handler",
+        #    code=lambda_.Code.from_asset("lambda"),
+        #    architecture=lambda_.Architecture.ARM_64
+        # )
+
+        # bucket = s3.Bucket(self, "bucket")
+
+        cluster = ecs.Cluster(self, "fargate_cluster", vpc=cani_vpc)
+
+        load_balanced_fargate_service = (
+            ecs_patterns.ApplicationLoadBalancedFargateService(
+                self,
+                "Service",
+                cluster=cluster,
+                memory_limit_mib=1024,
+                desired_count=1,
+                cpu=512,
+                runtime_platform=ecs.RuntimePlatform(
+                    cpu_architecture=ecs.CpuArchitecture.ARM64,
+                    operating_system_family=ecs.OperatingSystemFamily.LINUX,
                 ),
-                vpc_subnets=ec2.SubnetSelection(
-                    subnet_type=ec2.SubnetType.PRIVATE_ISOLATED
+                task_image_options=ecs_patterns.ApplicationLoadBalancedTaskImageOptions(
+                    image=ecs.ContainerImage.from_registry("amazon/amazon-ecs-sample")
                 ),
-                vpc=cani_vpc,
-            ),
+                task_subnets=ec2.SubnetSelection(
+                    subnets=cani_vpc.public_subnets
+                ),
+                load_balancer_name="application-lb-name",
+            )
         )
-
-        lambda_.Function(self, "lambda_function",
-            runtime=lambda_.Runtime.PYTHON_3_9,
-            handler="lambda-handler.handler",
-            code=lambda_.Code.from_asset("lambda"),
-            architecture=lambda_.Architecture.ARM_64
-        )
-
-        bucket = s3.Bucket(self, "bucket")
