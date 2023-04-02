@@ -15,6 +15,7 @@ from aws_cdk import (
 )
 from constructs import Construct
 from aws_cdk.aws_ecr_assets import DockerImageAsset
+import cani.ssm_parameter_reader as ssmr
 
 
 class CaniStack(Stack):
@@ -131,35 +132,27 @@ class CaniStack(Stack):
 
         # bucket = s3.Bucket(self, "bucket")
 
-        asset = DockerImageAsset(
-            self,
-            "image",
-            directory="docker"
-        )
+        asset = DockerImageAsset(self, "image", directory="docker")
 
         cluster = ecs.Cluster(self, "fargate_cluster", vpc=cani_vpc)
 
-        lb_fs = load_balanced_fargate_service = (
-            ecs_patterns.ApplicationLoadBalancedFargateService(
-                self,
-                "Service",
-                cluster=cluster,
-                memory_limit_mib=1024,
-                desired_count=1,
-                assign_public_ip=True,
-                cpu=512,
-                runtime_platform=ecs.RuntimePlatform(
-                    cpu_architecture=ecs.CpuArchitecture.ARM64,
-                    operating_system_family=ecs.OperatingSystemFamily.LINUX,
-                ),
-                task_image_options=ecs_patterns.ApplicationLoadBalancedTaskImageOptions(
-                    image=ecs.ContainerImage.from_docker_image_asset(asset),
-                    container_port=8000
-                ),
-                task_subnets=ec2.SubnetSelection(
-                    subnets=cani_vpc.public_subnets
-                ),
-            )
+        lb_fs = ecs_patterns.ApplicationLoadBalancedFargateService(
+            self,
+            "Service",
+            cluster=cluster,
+            memory_limit_mib=1024,
+            desired_count=1,
+            assign_public_ip=True,
+            cpu=512,
+            runtime_platform=ecs.RuntimePlatform(
+                cpu_architecture=ecs.CpuArchitecture.ARM64,
+                operating_system_family=ecs.OperatingSystemFamily.LINUX,
+            ),
+            task_image_options=ecs_patterns.ApplicationLoadBalancedTaskImageOptions(
+                image=ecs.ContainerImage.from_docker_image_asset(asset),
+                container_port=8000,
+            ),
+            task_subnets=ec2.SubnetSelection(subnets=cani_vpc.public_subnets),
         )
 
         for node in lb_fs.node.children:
@@ -168,6 +161,19 @@ class CaniStack(Stack):
                     if isinstance(subnode, alb.CfnLoadBalancer):
                         subnode.add_override("Properties.IpAddressType", "dualstack")
 
-        cloudfront.Distribution(self, "distribution",
-            default_behavior=cloudfront.BehaviorOptions(origin=origins.LoadBalancerV2Origin(lb_fs))
+        web_acl_arn = ssmr.SSMParameterReader(
+            self, "web_acl_arn", parameter_name="waf_acl_arn", region="us-east-1"
+        )
+
+        cloudfront.Distribution(
+            self,
+            "distribution",
+            web_acl_id=web_acl_arn.parametervalue,
+            http_version=cloudfront.HttpVersion.HTTP2_AND_3,
+            default_behavior=cloudfront.BehaviorOptions(
+                origin=origins.LoadBalancerV2Origin(
+                    lb_fs.load_balancer,
+                    protocol_policy=cloudfront.OriginProtocolPolicy.HTTP_ONLY,
+                ),
+            ),
         )

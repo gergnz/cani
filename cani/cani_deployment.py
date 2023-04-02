@@ -11,6 +11,7 @@ from constructs import Construct
 
 from .cani_stack import CaniStack
 
+
 #
 # Stack to hold the pipeline
 #
