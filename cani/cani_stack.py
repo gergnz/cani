@@ -13,14 +13,15 @@ from aws_cdk import (
     aws_cloudfront_origins as origins,
     Fn,
 )
-from constructs import Construct
 from aws_cdk.aws_ecr_assets import DockerImageAsset
+from constructs import Construct
 import cani.ssm_parameter_reader as ssmr
 
 
 class CaniStack(Stack):
     """Can I stack"""
 
+    # pylint: disable=too-many-locals
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
@@ -79,58 +80,60 @@ class CaniStack(Stack):
         for subnet in cani_vpc.public_subnets:
             public_subnets.append(subnet.subnet_id)
 
-        # redis_subnet_group = elasticache.CfnSubnetGroup(
-        #    scope=self,
-        #    id="redis_subnet_group",
-        #    subnet_ids=public_subnets,
-        #    description="subnet group for redis",
-        # )
+        redis_subnet_group = elasticache.CfnSubnetGroup(
+            scope=self,
+            id="redis_subnet_group",
+            subnet_ids=public_subnets,
+            description="subnet group for redis",
+        )
 
-        # redis_sec_group = ec2.SecurityGroup(
-        #    self,
-        #    "redis_sec_group",
-        #    vpc=cani_vpc,
-        #    allow_all_outbound=False,
-        # )
+        redis_sec_group = ec2.SecurityGroup(
+            self,
+            "redis_sec_group",
+            vpc=cani_vpc,
+            allow_all_outbound=False,
+        )
 
-        # redis_cluster = elasticache.CfnCacheCluster(
-        #    scope=self,
-        #    id="redis_cluster",
-        #    engine="redis",
-        #    cache_node_type="cache.t4g.small",
-        #    num_cache_nodes=1,
-        #    network_type="dual_stack",
-        #    cache_subnet_group_name=redis_subnet_group.ref,
-        #    vpc_security_group_ids=[redis_sec_group.security_group_id],
-        # )
+        redis_cluster = elasticache.CfnCacheCluster(
+            scope=self,
+            id="redis_cluster",
+            engine="redis",
+            cache_node_type="cache.t4g.small",
+            num_cache_nodes=1,
+            network_type="dual_stack",
+            cache_subnet_group_name=redis_subnet_group.ref,
+            vpc_security_group_ids=[redis_sec_group.security_group_id],
+        )
 
-        # aurora_cluster = rds.DatabaseCluster(
-        #    self,
-        #    "aurora_cluster",
-        #    engine=rds.DatabaseClusterEngine.aurora_mysql(
-        #        version=rds.AuroraMysqlEngineVersion.VER_3_03_0
-        #    ),
-        #    instances=1,
-        #    network_type=rds.NetworkType.DUAL,
-        #    instance_props=rds.InstanceProps(
-        #        instance_type=ec2.InstanceType.of(
-        #            ec2.InstanceClass.BURSTABLE4_GRAVITON, ec2.InstanceSize.MEDIUM
-        #        ),
-        #        vpc_subnets=ec2.SubnetSelection(
-        #            subnet_type=ec2.SubnetType.PRIVATE_ISOLATED
-        #        ),
-        #        vpc=cani_vpc,
-        #    ),
-        # )
+        aurora_cluster = rds.DatabaseCluster(
+            self,
+            "aurora_cluster",
+            engine=rds.DatabaseClusterEngine.aurora_mysql(
+                version=rds.AuroraMysqlEngineVersion.VER_3_03_0
+            ),
+            instances=1,
+            network_type=rds.NetworkType.DUAL,
+            instance_props=rds.InstanceProps(
+                instance_type=ec2.InstanceType.of(
+                    ec2.InstanceClass.BURSTABLE4_GRAVITON, ec2.InstanceSize.MEDIUM
+                ),
+                vpc_subnets=ec2.SubnetSelection(
+                    subnet_type=ec2.SubnetType.PRIVATE_ISOLATED
+                ),
+                vpc=cani_vpc,
+            ),
+        )
 
-        # lambda_.Function(self, "lambda_function",
-        #    runtime=lambda_.Runtime.PYTHON_3_9,
-        #    handler="lambda-handler.handler",
-        #    code=lambda_.Code.from_asset("lambda"),
-        #    architecture=lambda_.Architecture.ARM_64
-        # )
+        lambda_.Function(
+            self,
+            "lambda_function",
+            runtime=lambda_.Runtime.PYTHON_3_9,
+            handler="lambda-handler.handler",
+            code=lambda_.Code.from_asset("lambda"),
+            architecture=lambda_.Architecture.ARM_64,
+        )
 
-        # bucket = s3.Bucket(self, "bucket")
+        bucket = s3.Bucket(self, "bucket")
 
         asset = DockerImageAsset(self, "image", directory="docker")
 
@@ -151,6 +154,11 @@ class CaniStack(Stack):
             task_image_options=ecs_patterns.ApplicationLoadBalancedTaskImageOptions(
                 image=ecs.ContainerImage.from_docker_image_asset(asset),
                 container_port=8000,
+                environment={
+                    "MYSQL": aurora_cluster.cluster_endpoint,
+                    "REDIS": redis_cluster.attr_redis_endpoint_address,
+                    "BUCKET": bucket.bucket_dual_stack_domain_name,
+                },
             ),
             task_subnets=ec2.SubnetSelection(subnets=cani_vpc.public_subnets),
         )

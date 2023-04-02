@@ -64,6 +64,21 @@ class CaniPipelineStack(Stack):
             )
         )
 
+        pipeline.add_stage(
+            WafStage(
+                self,
+                "WafStack",
+                env=Environment(account="025705368789", region="us-east-1"),
+            )
+        )
+
+class WafStage(Stage):
+    """Deploy the waf"""
+
+    def __init__(self, scope, construct_id: str, **kwargs) -> None:
+        super().__init__(scope, construct_id, **kwargs)
+
+        CaniStack(self, "wafStack", stack_name="WafStack")
 
 class CaniStage(Stage):
     """Deploy the app"""
